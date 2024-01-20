@@ -1,13 +1,15 @@
-/*File   : MS5607.cpp
-  Author : Amit Ate
-  Email  : amit@uravulabs.com
-  Company: Uravu Labs
-  Website: http://www.uravulabs.com
-  Created:  2016-01-01
-  Edited :  2021 by Adam Marciniak
-  Modifyed the library to be non blocking. Original has a delay of 3 milisec. This is not acceptable for a flight controller.
-  The library is now using the millis() function to check if the conversion is done. This way the main loop can do other things while the conversion is running.
-    */
+/* MS5607.cpp
+   Author: Amit Ate
+   Email: amit@uravulabs.com
+   Company: Uravu Labs
+   Website: http://www.uravulabs.com
+   Created: 2016-01-01
+   Edited: 2021 by Adam Marciniak
+   Modified the library to be non-blocking. Original has a delay of 3 millisec.
+   This is not acceptable for a flight controller. The library is now using the
+   millis() function to check if the conversion is done. This way the main loop
+   can do other things while the conversion is running.
+*/
 
 #include <math.h>
 #include "MS5607.h"
@@ -15,23 +17,38 @@
 
 unsigned long convElapsed = 0;
 
+// Function: MS5607 (constructor)
+// Input: float *altitudeVariable (pointer to a variable where altitude data will be stored)
+// Return: None
+// Description: Constructor for MS5607 class, initializes internal variables.
 MS5607::MS5607(float *altitudeVariable)
 {
-  this->internal_altitude = altitudeVariable;
+  this->internal_altitude = altitudeVariable; // Pointer to store altitude data.
 }
 
+// Function: MS5607 (constructor)
+// Input: short address (I2C address of the MS5607 sensor)
+// Return: None
+// Description: Constructor for MS5607 class, sets the I2C address of the sensor.
 MS5607::MS5607(short address)
 {
-  this->MS5607_ADDR = address;
+  this->MS5607_ADDR = address; // I2C address of the MS5607 sensor.
 }
 
-// Initialise coefficient by reading calibration data
+// Function: begin
+// Input: None
+// Return: char (0 for failure, 1 for success)
+// Description: Initializes the MS5607 sensor by reading calibration data.
 char MS5607::begin()
 {
   Wire1.begin();
   return (readCalibration());
 }
 
+// Function: resetDevice
+// Input: None
+// Return: char (0 for failure, 1 for success)
+// Description: Resets the MS5607 device and waits for internal register reload.
 char MS5607::resetDevice(void)
 {
   Wire1.beginTransmission(MS5607_ADDR);
@@ -48,7 +65,10 @@ char MS5607::resetDevice(void)
   }
 }
 
-// read calibration data from PROM
+// Function: readCalibration
+// Input: None
+// Return: char (0 for failure, 1 for success)
+// Description: Reads calibration data from the PROM of the MS5607 sensor.
 char MS5607::readCalibration()
 {
   if (resetDevice() &&
@@ -67,10 +87,13 @@ char MS5607::readCalibration()
   }
 }
 
-// convert raw data into unsigned int
+// Function: readUInt_16
+// Input: char address, unsigned int &value
+// Return: char (0 for failure, 1 for success)
+// Description: Reads an unsigned 16-bit integer from the specified address.
 char MS5607::readUInt_16(char address, unsigned int &value)
 {
-  unsigned char data[2]; //4bit
+  unsigned char data[2]; // 4bit
   data[0] = address;
   if (readBytes(data, 2))
   {
@@ -81,7 +104,10 @@ char MS5607::readUInt_16(char address, unsigned int &value)
   return (0);
 }
 
-// read number of bytes over i2c
+// Function: readBytes
+// Input: unsigned char *values, char length
+// Return: char (0 for failure, 1 for success)
+// Description: Reads a specified number of bytes over I2C from the MS5607 sensor.
 char MS5607::readBytes(unsigned char *values, char length)
 {
   char x;
@@ -104,7 +130,10 @@ char MS5607::readBytes(unsigned char *values, char length)
   return (0);
 }
 
-// send command to start measurement
+// Function: startMeasurment
+// Input: None
+// Return: char (0 for failure, 1 for success)
+// Description: Sends a command to start measurement and records the start time.
 char MS5607::startMeasurment(void)
 {
   Wire1.beginTransmission(MS5607_ADDR);
@@ -112,7 +141,7 @@ char MS5607::startMeasurment(void)
   char error = Wire1.endTransmission();
   if (error == 0)
   {
-    convElapsed = millis();
+    convElapsed = millis(); // Record the start time of the measurement.
     return (1);
   }
   else
@@ -121,7 +150,10 @@ char MS5607::startMeasurment(void)
   }
 }
 
-// send command to start conversion of temp/pressure
+// Function: startConversion
+// Input: char CMD
+// Return: char (0 for failure, 1 for success)
+// Description: Sends a command to start conversion of temperature or pressure.
 char MS5607::startConversion(char CMD)
 {
   Wire1.beginTransmission(MS5607_ADDR);
@@ -129,7 +161,7 @@ char MS5607::startConversion(char CMD)
   char error = Wire1.endTransmission();
   if (error == 0)
   {
-    convElapsed = millis();
+    convElapsed = millis(); // Record the start time of the conversion.
     return (1);
   }
   else
@@ -138,13 +170,15 @@ char MS5607::startConversion(char CMD)
   }
 }
 
-bool dataAvailable = false;
-
+// Function: isDataAvailable
+// Input: None
+// Return: bool (true if data is available, false otherwise)
+// Description: Checks if data is available and resets the flag.
 bool MS5607::isDataAvailable()
 {
   if (dataAvailable)
   {
-    dataAvailable = false;
+    dataAvailable = false; // Reset the data availability flag.
     return true;
   }
   else
@@ -153,8 +187,11 @@ bool MS5607::isDataAvailable()
   }
 }
 
+// Function: handleAltimeter
+// Input: None
+// Return: int (1 for success, 0 for failure)
+// Description: Handles the altimeter data processing in stages.
 int MS5607::handleAltimeter(void)
-
 {
   if (state == 0)
   {
@@ -194,15 +231,18 @@ int MS5607::handleAltimeter(void)
 
   if (state == 6)
   {
-    *internal_altitude = getAltitude();
-    dataAvailable = true;
+    *internal_altitude = getAltitude(); // Store calculated altitude in the provided variable.
+    dataAvailable = true; // Set the data availability flag.
     state = 0;
     return 1;
   }
   return 0;
 }
 
-// read raw digital values of temp & pressure from MS5607
+// Function: readDigitalValue
+// Input: None
+// Return: char (0 for failure, 1 for success)
+// Description: Reads raw digital values of temperature and pressure from MS5607.
 char MS5607::readDigitalValue(void)
 {
   if (startConversion(CONV_D1))
@@ -232,6 +272,10 @@ char MS5607::readDigitalValue(void)
   return 1;
 }
 
+// Function: getDigitalValue
+// Input: unsigned long &value
+// Return: char (0 for failure, 1 for success)
+// Description: Reads raw digital values of temperature or pressure from MS5607.
 char MS5607::getDigitalValue(unsigned long &value)
 {
   char x, length = 3;
@@ -247,6 +291,10 @@ char MS5607::getDigitalValue(unsigned long &value)
   return (1);
 }
 
+// Function: getTemperature
+// Input: None
+// Return: float (temperature value)
+// Description: Calculates and returns the temperature from raw digital values.
 float MS5607::getTemperature(void)
 {
   dT = (float)DT - ((float)C5) * ((int)1 << 8);
@@ -254,6 +302,10 @@ float MS5607::getTemperature(void)
   return TEMP / 100;
 }
 
+// Function: getPressure
+// Input: None
+// Return: float (pressure value)
+// Description: Calculates and returns the pressure from raw digital values.
 float MS5607::getPressure(void)
 {
   dT = (float)DT - ((float)C5) * ((int)1 << 8);
@@ -268,10 +320,13 @@ float MS5607::getPressure(void)
   return P / 100;
 }
 
-// set OSR and select corresponding values for conversion commands & delay
+// Function: setOSR
+// Input: short OSR_U
+// Return: None
+// Description: Sets the oversampling rate and corresponding values for conversion commands & delay.
 void MS5607::setOSR(short OSR_U)
 {
-  this->OSR = OSR_U;
+  this->OSR = OSR_U; // Set the oversampling rate.
   switch (OSR)
   {
   case 256:
@@ -307,6 +362,10 @@ void MS5607::setOSR(short OSR_U)
   }
 }
 
+// Function: getAltitude
+// Input: None
+// Return: float (altitude value)
+// Description: Calculates and returns the altitude from temperature and pressure values.
 float MS5607::getAltitude(void)
 {
   float h, t, p;
