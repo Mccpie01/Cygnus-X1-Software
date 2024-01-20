@@ -1,4 +1,7 @@
 
+/* Handeling the Altemiter  
+ * MS5607 - Barometric Pressure Sensor
+ */
 #include "Altimeter.h"
 
 float rawAltitude = 0;

@@ -1,6 +1,6 @@
 /* Copyright (c) 2016-2020 Electric UI
  * MIT Licenced - see LICENCE for details.
- *
+ * Eui - electricui.com Tool to create Dashboard to interpret data from rocket in testing mode Great Debugging Tool
  * 
  */
 

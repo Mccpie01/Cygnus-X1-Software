@@ -2,7 +2,12 @@
   Author : Amit Ate
   Email  : amit@uravulabs.com
   Company: Uravu Labs
-*/
+  Website: http://www.uravulabs.com
+  Created:  2016-01-01
+  Edited :  2021 by Adam Marciniak
+  Modifyed the library to be non blocking. Original has a delay of 3 milisec. This is not acceptable for a flight controller.
+  The library is now using the millis() function to check if the conversion is done. This way the main loop can do other things while the conversion is running.
+    */
 
 #include <math.h>
 #include "MS5607.h"
